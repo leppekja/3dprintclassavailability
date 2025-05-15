@@ -1,0 +1,44 @@
+name: Check Acuity Scheduling Availability
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # 7 AM ET Daily
+  workflow_dispatch:
+
+jobs:
+  check-availability:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Check class availability
+        id: check
+        run: |
+          python check_availability.py
+
+      - name: Create a push request
+        if: steps.check.outputs.availability == 'true'
+        run: |
+          # Get today's date
+          TODAY=$(date '+%Y-%m-%d')
+          # Create success.txt file with message
+          echo "Sign up quick on $TODAY!" > success.txt
+
+          git config --local user.name "github-actions"
+          git config --local user.email "github-actions@github.com"
+          git add success.txt
+          git commit -m "Class available on $TODAY"
+          git push origin HEAD:main
