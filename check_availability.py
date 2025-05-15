@@ -3,12 +3,20 @@ from bs4 import BeautifulSoup
 import os
 
 if __name__ == "__main__":
-    url = 'https://app.acuityscheduling.com/schedule/fb85a23f/?appointmentTypeIds%5B%5D=28912694'
+    url = os.environ.get("URL")
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': os.environ.get("USER_AGENT"),
     }
 
+    # Run as part of a GitHub Action, and where the output is written to
+    env_file = os.environ.get("GITHUB_OUTPUT")
+
     response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(f"Failed to retrieve the page. Status code: {response.status_code}")
+        with open(env_file, "a") as f:
+            f.write(f"availability=false\n")
+        exit(1)
     soup = BeautifulSoup(response.text, 'html.parser')
 
     available_slots = []
@@ -20,12 +28,10 @@ if __name__ == "__main__":
         if date_text:
             available_slots.append(date_text)
 
-    # Get the GitHub Actions output file path
-    env_file = os.environ.get("GITHUB_OUTPUT")
-
     if available_slots:
         with open(env_file, "a") as f:
             f.write(f"availability=true\n")
     else:
         with open(env_file, "a") as f:
             f.write(f"availability=false\n")
+

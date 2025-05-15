@@ -1,4 +1,4 @@
-name: Check Acuity Scheduling Availability
+name: Check Class Availability
 
 on:
   schedule:
@@ -26,8 +26,16 @@ jobs:
 
       - name: Check class availability
         id: check
+        env:
+          URL: ${{ secrets.URL }}
+          USER_AGENT: ${{ secrets.USER_AGENT }}
         run: |
           python check_availability.py
+
+      - name: Log when no classes are available
+        if: steps.check.outputs.availability != 'true'
+        run: |
+          echo "No available classes found today. Will check again tomorrow."
 
       - name: Create a push request
         if: steps.check.outputs.availability == 'true'
