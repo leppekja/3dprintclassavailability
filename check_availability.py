@@ -1,6 +1,6 @@
 import requests
-from bs4 import BeautifulSoup
 import os
+import re 
 
 if __name__ == "__main__":
     url = os.environ.get("URL")
@@ -17,18 +17,13 @@ if __name__ == "__main__":
         with open(env_file, "a") as f:
             f.write(f"availability=false\n")
         exit(1)
-    soup = BeautifulSoup(response.text, 'html.parser')
 
     available_slots = []
 
-    calendar_items = soup.select('.calendar-day:not(.calendar-day-unavailable)')
+    spots_pattern = re.compile(r'(\d+)\s+spots?\s+left', re.IGNORECASE)
+    spots_found = spots_pattern.findall(response.text)
 
-    for item in calendar_items:
-        date_text = item.get_text().strip()
-        if date_text:
-            available_slots.append(date_text)
-
-    if available_slots:
+    if spots_found:
         with open(env_file, "a") as f:
             f.write(f"availability=true\n")
     else:
